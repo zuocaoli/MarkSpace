@@ -1,0 +1,3 @@
+# Windows (MSVC)：GPUI 需要更大线程栈，链接时加 /STACK（与 gpui-component 上游一致）
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/STACK:8000000"]

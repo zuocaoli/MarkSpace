@@ -1,0 +1,5 @@
+# 与 zed 仓库（gpui 依赖锁 rev 770aac34）pin 的 1.97.1 一致
+[toolchain]
+channel = "1.97.1"
+components = ["clippy", "rustfmt"]
+profile = "minimal"

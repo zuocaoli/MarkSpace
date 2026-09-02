@@ -1,0 +1,20 @@
+[package]
+name = "MarkSpace"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+gpui = { git = "https://github.com/zed-industries/zed" }
+gpui_platform = { git = "https://github.com/zed-industries/zed", features = ["font-kit"] }
+# gpui-component 直接引用本地 vendored 副本（vendor/），内含 MarkSpace 对
+# dock 省略号菜单的移除补丁；升级上游时同步重新拷贝并保留补丁
+gpui-component = { path = "vendor/gpui-component/crates/ui" }
+gpui-component-assets = { path = "vendor/gpui-component/crates/assets" } # 图标资源,可选
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# 发布构建：thin LTO + 单代码生成单元最大化优化；strip 减小分发体积
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

@@ -1,0 +1,74 @@
+# CI 质量门禁：main 推送与所有 PR；三平台并行
+# fmt/clippy 仅 ubuntu 执行（结果与平台无关，三平台跑会让依赖树编译三遍）
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"] # 打 tag 也过质量门禁，发布构建不再是未检查代码
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y gcc g++ clang libfontconfig-dev libwayland-dev \
+            libxkbcommon-x11-dev libx11-xcb-dev libssl-dev libzstd-dev libvulkan1
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Cache cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ci-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+
+      # fmt/clippy 限定到根包：vendor/gpui-component 是 vendored 副本，不是本工作区
+      # 代码，cargo fmt --all 会把它拉进来且因缺失 showcase 模块直接报错
+      - name: Rustfmt check
+        if: runner.os == 'Linux'
+        run: cargo fmt -p MarkSpace -- --check
+
+      - name: Clippy
+        if: runner.os == 'Linux'
+        run: cargo clippy -p MarkSpace --all-targets -- -D warnings
+
+      - name: Cargo check
+        run: cargo check
+
+      # 单元测试为 model.rs 纯函数（不创建窗口），headless CI 可跑；
+      # 测试二进制链接整个 GUI 应用，顺带验证各平台链接完整性
+      - name: Cargo test
+        run: cargo test

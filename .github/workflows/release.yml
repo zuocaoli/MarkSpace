@@ -55,8 +55,13 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          tar czf "MarkSpace-${VERSION}-${{ matrix.target }}.tar.gz" \
-            -C target/release MarkSpace
+          # 二进制 + .desktop 启动器 + 图标 + 用户级安装脚本
+          mkdir -p dist
+          cp target/release/MarkSpace dist/
+          cp packaging/linux/MarkSpace.desktop packaging/linux/install.sh dist/
+          cp assets/app.png dist/MarkSpace.png
+          chmod +x dist/MarkSpace dist/install.sh
+          tar czf "MarkSpace-${VERSION}-${{ matrix.target }}.tar.gz" -C dist .
 
       - name: Archive (macOS)
         if: runner.os == 'macOS'

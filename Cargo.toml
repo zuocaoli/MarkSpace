@@ -16,6 +16,10 @@ serde_json = "1"
 # 仅启用 png 编解码，不引入额外 codecs
 image = { version = "0.25", default-features = false, features = ["png"] }
 
+# Windows 构建时把图标/版本信息嵌入 .exe（build.rs）；仅 Windows 目标拉取
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"
+
 # 发布构建：thin LTO + 单代码生成单元最大化优化；strip 减小分发体积
 [profile.release]
 lto = "thin"

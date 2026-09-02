@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=MarkSpace
+GenericName=Markdown Editor
+GenericName[zh_CN]=Markdown 编辑器
+Comment=基于 GPUI 的原生 Markdown 桌面工作台
+Exec=MarkSpace %f
+Icon=MarkSpace
+Terminal=false
+Categories=Development;Utility;TextEditor;
+Keywords=markdown;editor;
+StartupNotify=true
+StartupWMClass=MarkSpace

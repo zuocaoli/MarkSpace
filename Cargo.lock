@@ -10,6 +10,7 @@ dependencies = [
  "gpui-component",
  "gpui-component-assets",
  "gpui_platform",
+ "image",
  "serde",
  "serde_json",
 ]

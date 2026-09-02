@@ -15,6 +15,16 @@ use gpui::*;
 use gpui_component::Root;
 use std::borrow::Cow;
 use std::path::PathBuf;
+use std::sync::Arc;
+
+/// 加载应用图标（编译时嵌入 assets/app.png）：X11 窗口标题栏/任务栏使用；
+/// 解码失败返回 None（窗口无图标运行，不影响启动）。
+fn load_window_icon() -> Option<Arc<image::RgbaImage>> {
+    let bytes = include_bytes!("../assets/app.png");
+    image::load_from_memory_with_format(bytes, image::ImageFormat::Png)
+        .map(|img| Arc::new(img.to_rgba8()))
+        .ok()
+}
 
 /// 应用资源：优先自己的 assets/（编译时嵌入），缺失时回退到组件图标库。
 /// 这样既能用自定义图标（目录树文件夹/文件 PNG），又不影响
@@ -71,8 +81,19 @@ fn main() {
             install_bundled_fonts(cx); // 加载软件自带字体
             workspace::init(cx); // 全局按键绑定
             let root = root.clone();
+            let icon = load_window_icon();
             cx.spawn(async move |cx| {
-                cx.open_window(WindowOptions::default(), move |window, cx| {
+                // 窗口图标（X11）、app_id（Wayland 桌面分组/匹配 .desktop）、标题
+                let options = WindowOptions {
+                    app_id: Some("MarkSpace".to_string()),
+                    titlebar: Some(TitlebarOptions {
+                        title: Some("MarkSpace".into()),
+                        ..Default::default()
+                    }),
+                    icon,
+                    ..Default::default()
+                };
+                cx.open_window(options, move |window, cx| {
                     let view = cx.new(|cx| workspace::Workspace::new(root, window, cx));
                     // 窗口第一层视图必须是 Root —— 对话框/抽屉/通知都要靠它
                     cx.new(|cx| Root::new(view, window, cx))

@@ -12,6 +12,9 @@ gpui-component = { path = "vendor/gpui-component/crates/ui" }
 gpui-component-assets = { path = "vendor/gpui-component/crates/assets" } # 图标资源,可选
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# 窗口图标解码（PNG → RgbaImage 供 WindowOptions.icon）；版本与 gpui 内部一致，
+# 仅启用 png 编解码，不引入额外 codecs
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 # 发布构建：thin LTO + 单代码生成单元最大化优化；strip 减小分发体积
 [profile.release]

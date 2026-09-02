@@ -3,6 +3,10 @@
 //! 用法：`cargo run -- [工作目录]`；缺省为空工作区（不打开目录，点击状态栏
 //! 「打开目录」选择）。
 
+// Release 构建使用 Windows GUI 子系统：双击 .exe 不再弹出控制台窗口；
+// debug 构建保留控制台，便于查看 eprintln 日志与 panic 输出。
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod editor_panel;
 mod model;
 mod outline_panel;

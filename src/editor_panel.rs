@@ -221,14 +221,15 @@ impl EditorPanel {
         });
         let preview = cx.new(|cx| TextViewState::markdown("", cx));
 
-        // 订阅编辑事件：内容变化 → 更新 dirty/大纲，防抖刷新预览
-        let path_key = path.clone();
+        // 订阅编辑事件：内容变化 → 更新 dirty/大纲，防抖刷新预览。
+        // 回调按「编辑器实体」定位文档（而非路径），文件被树面板重命名后
+        // 订阅依然有效，无需重订阅。
         let subscription = cx.subscribe(&editor, {
             move |this: &mut EditorPanel,
-                  _editor: Entity<EditorState>,
+                  editor: Entity<EditorState>,
                   _event: &InputEvent,
                   cx: &mut Context<EditorPanel>| {
-                this.on_doc_changed(&path_key, cx);
+                this.on_doc_changed(&editor, cx);
             }
         });
 
@@ -440,24 +441,34 @@ impl EditorPanel {
     }
 
     /// 编辑器内容变化：更新 dirty 与大纲缓存，重启预览防抖。
-    fn on_doc_changed(&mut self, path: &Path, cx: &mut Context<Self>) {
-        let Some(doc) = self.docs.get_mut(path) else {
+    /// 按编辑器实体定位文档（不依赖路径，重命名后仍可命中）。
+    fn on_doc_changed(&mut self, editor: &Entity<EditorState>, cx: &mut Context<Self>) {
+        let Some(doc) = self
+            .docs
+            .values_mut()
+            .find(|d| d.editor.entity_id() == editor.entity_id())
+        else {
             return;
         };
         let text = doc.editor.read(cx).value();
         doc.dirty = text != doc.saved_text;
         doc.outline = model::extract_headings(&text);
 
-        // 300ms 防抖更新预览；重新赋值 Task 即取消旧任务
+        // 300ms 防抖更新预览；重新赋值 Task 即取消旧任务。预览任务同样按
+        // 编辑器实体取文本，避免重命名后旧路径查不到导致预览不刷新。
         let preview = doc.preview.clone();
-        let path = path.to_path_buf();
+        let editor = doc.editor.clone();
         doc._preview_task = Some(cx.spawn(async move |this: WeakEntity<Self>, cx| {
             cx.background_executor()
                 .timer(Duration::from_millis(300))
                 .await;
             let Some(entity) = this.upgrade() else { return };
             let text = entity.update(cx, |panel, cx| {
-                panel.docs.get(&path).map(|d| d.editor.read(cx).value())
+                panel
+                    .docs
+                    .values()
+                    .find(|d| d.editor.entity_id() == editor.entity_id())
+                    .map(|d| d.editor.read(cx).value())
             });
             let Some(text) = text else { return };
             // 预览实体被 Task 持有克隆，文档可已关闭；此时更新无害（不再被渲染）
@@ -466,6 +477,49 @@ impl EditorPanel {
 
         cx.notify();
         self.notify_others(cx);
+    }
+
+    /// 文件或目录被重命名后，同步所有打开文档的路径（docs 键、doc.path、
+    /// tab_order、active）。目录重命名会连带其下所有已打开文档一起迁移。
+    /// 订阅器按编辑器实体定位文档，迁移后无需重订阅。
+    pub fn on_paths_renamed(&mut self, old: &Path, new: &Path, cx: &mut Context<Self>) {
+        fn remap(p: &Path, old: &Path, new: &Path) -> PathBuf {
+            if p == old {
+                new.to_path_buf()
+            } else if let Ok(rest) = p.strip_prefix(old) {
+                new.join(rest)
+            } else {
+                p.to_path_buf()
+            }
+        }
+
+        // 没有任何打开文档受影响则不动
+        let affected = self
+            .tab_order
+            .iter()
+            .any(|p| p == old || p.starts_with(old));
+        if !affected {
+            return;
+        }
+        let new_order: Vec<PathBuf> = self.tab_order.iter().map(|p| remap(p, old, new)).collect();
+        self.tab_order = new_order;
+        // 先 take 出 map 再重建键，避免直接 move 结构体字段
+        let old_docs = std::mem::take(&mut self.docs);
+        self.docs = old_docs
+            .into_iter()
+            .map(|(p, mut doc)| {
+                let np = remap(&p, old, new);
+                if np != p {
+                    doc.path = np.clone();
+                }
+                (np, doc)
+            })
+            .collect();
+        if let Some(a) = &self.active {
+            self.active = Some(remap(a, old, new));
+        }
+        self.notify_others(cx);
+        cx.notify();
     }
 }
 

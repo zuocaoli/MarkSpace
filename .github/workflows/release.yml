@@ -67,7 +67,11 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          ditto -c -k --sequesterRsrc --keepParent target/release/MarkSpace \
+          # 组装 MarkSpace.app（二进制 + AppIcon.icns + Info.plist）
+          chmod +x packaging/macos/bundle.sh
+          packaging/macos/bundle.sh target/release/MarkSpace "$VERSION" .
+          # ditto 保留 .app 目录结构与资源分支
+          ditto -c -k --sequesterRsrc --keepParent MarkSpace.app \
             "MarkSpace-${VERSION}-${{ matrix.target }}.zip"
 
       - name: Archive (Windows)

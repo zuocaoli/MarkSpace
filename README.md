@@ -51,7 +51,7 @@ GitHub Actions 自动完成质量门禁与发布：
 | 平台 | 文件 | 说明 |
 | --- | --- | --- |
 | Linux x86_64 | `MarkSpace-0.1.0-x86_64-unknown-linux-gnu.tar.gz` | `tar xzf` 解压后运行 `./MarkSpace`；执行包内 `./install.sh` 可用户级安装图标与 `.desktop` 启动器（无需 root） |
-| macOS（Apple Silicon） | `MarkSpace-0.1.0-aarch64-apple-darwin.zip` | 解压后运行 `MarkSpace`；未签名，首次运行请右键 → 打开，或 `xattr -d com.apple.quarantine MarkSpace` |
+| macOS（Apple Silicon） | `MarkSpace-0.1.0-aarch64-apple-darwin.zip` | 解压得到 `MarkSpace.app`，拖入「应用程序」即可；未签名，首次运行请右键 → 打开，或 `xattr -d com.apple.quarantine MarkSpace.app` |
 | Windows x86_64 | `MarkSpace-0.1.0-x86_64-pc-windows-msvc.zip` | 解压后双击 `MarkSpace.exe`（图标已嵌入）；未签名，SmartScreen 拦截时点「更多信息 → 仍要运行」 |
 
 > 也可通过源码构建：`cargo install --git <仓库地址>` 或按上文「构建与运行」章节本地编译。

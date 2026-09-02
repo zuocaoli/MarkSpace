@@ -22,21 +22,12 @@ use std::path::PathBuf;
 // ---- 配置模型 --------------------------------------------------------------
 
 /// 全部应用配置：每个设置组一个字段，serde(default) 容错缺失字段。
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AppConfig {
     pub font: FontSettings,
     pub zoom: ZoomSettings,
     // 未来：pub theme: ThemeSettings, pub behavior: BehaviorSettings, …
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            font: FontSettings::default(),
-            zoom: ZoomSettings::default(),
-        }
-    }
 }
 
 /// 字体设置组。

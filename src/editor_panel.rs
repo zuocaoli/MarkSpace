@@ -21,14 +21,17 @@ fn scroll_zoom_factor(delta: gpui::ScrollDelta) -> Option<f32> {
     }
 }
 
+/// 滚轮缩放回调：参数为缩放因子。
+type ZoomCallback = Rc<dyn Fn(f32, &mut Window, &mut App)>;
+
 /// 零尺寸拦截元素：paint 阶段注册 Capture 阶段滚轮监听，
 /// Ctrl+滚轮 → 缩放编辑/预览区字号并 stop_propagation（阻止内容同时滚动）。
 struct CaptureWheelZoom {
-    on_zoom: Rc<dyn Fn(f32, &mut Window, &mut App)>,
+    on_zoom: ZoomCallback,
 }
 
 impl CaptureWheelZoom {
-    fn new(on_zoom: Rc<dyn Fn(f32, &mut Window, &mut App)>) -> Self {
+    fn new(on_zoom: ZoomCallback) -> Self {
         Self { on_zoom }
     }
 }

@@ -166,13 +166,11 @@ impl Render for TreePanel {
                                     panel.update(cx, |p, cx| p.select_path(&path, cx));
                                 }
                                 // 目录点击交给树组件展开/折叠，不触发打开
-                                if !is_folder {
-                                    if let Some(ep) = editor_panel.upgrade() {
-                                        ep.update(cx, |p, cx| p.open(path.clone(), window, cx));
-                                        // open 不再内部通知 Workspace（避免嵌套更新），
-                                        // 这里在 Workspace 栈外，显式通知刷新
-                                        ep.update(cx, |p, cx| p.notify_workspace(cx));
-                                    }
+                                if !is_folder && let Some(ep) = editor_panel.upgrade() {
+                                    // open 不再内部通知 Workspace（避免嵌套更新），
+                                    // 这里在 Workspace 栈外，显式通知刷新
+                                    ep.update(cx, |p, cx| p.open(path.clone(), window, cx));
+                                    ep.update(cx, |p, cx| p.notify_workspace(cx));
                                 }
                             }
                         })
